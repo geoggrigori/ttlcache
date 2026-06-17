@@ -98,6 +98,54 @@ func TestStats(t *testing.T) {
 	}
 }
 
+func TestKeys(t *testing.T) {
+	clock := newFakeClock(time.Now())
+	s := New(0, WithClock(clock.now))
+	defer s.Close()
+
+	if got := s.Keys(); len(got) != 0 {
+		t.Fatalf("Keys() on empty store = %v; want empty", got)
+	}
+
+	s.Set("a", "alpha", time.Minute)
+	s.Set("b", "beta", time.Minute)
+	s.Set("short", "gone", 10*time.Second)
+
+	clock.advance(11 * time.Second) // expire only "short"
+
+	got := s.Keys()
+	want := map[string]bool{"a": true, "b": true}
+	if len(got) != len(want) {
+		t.Fatalf("Keys() = %v; want keys %v", got, want)
+	}
+	for _, k := range got {
+		if !want[k] {
+			t.Fatalf("Keys() returned unexpected key %q (got %v)", k, got)
+		}
+	}
+}
+
+func TestFlush(t *testing.T) {
+	s := New(0)
+	defer s.Close()
+
+	s.Set("a", "alpha", time.Minute)
+	s.Set("b", "beta", time.Minute)
+	s.Get("a") // record a hit so we can verify counters survive Flush
+
+	s.Flush()
+
+	if s.Len() != 0 {
+		t.Fatalf("Len() after Flush = %d; want 0", s.Len())
+	}
+	if _, ok := s.Get("a"); ok {
+		t.Fatalf("Get(a) after Flush: want missing")
+	}
+	if st := s.Stats(); st.Hits != 1 {
+		t.Fatalf("Stats after Flush = %+v; want hits=1 preserved", st)
+	}
+}
+
 func TestConcurrentSetGet(t *testing.T) {
 	s := New(time.Millisecond)
 	defer s.Close()

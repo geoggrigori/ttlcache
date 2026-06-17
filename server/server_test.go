@@ -127,3 +127,56 @@ func TestStats(t *testing.T) {
 		t.Fatalf("stats = %+v; want items=1 hits=1 misses=1", st)
 	}
 }
+
+func TestKeys(t *testing.T) {
+	ts := newTestServer(t)
+
+	// Empty cache must serialize as an empty JSON array, not null.
+	resp := do(t, ts, http.MethodGet, "/keys", "")
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if strings.TrimSpace(string(body)) != "[]" {
+		t.Fatalf("GET /keys on empty cache = %q; want []", body)
+	}
+
+	do(t, ts, http.MethodPut, "/kv/a", "1").Body.Close()
+	do(t, ts, http.MethodPut, "/kv/b", "2").Body.Close()
+
+	resp = do(t, ts, http.MethodGet, "/keys", "")
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("GET /keys status = %d; want 200", resp.StatusCode)
+	}
+	var keys []string
+	if err := json.NewDecoder(resp.Body).Decode(&keys); err != nil {
+		t.Fatalf("decode keys: %v", err)
+	}
+	want := map[string]bool{"a": true, "b": true}
+	if len(keys) != len(want) {
+		t.Fatalf("GET /keys = %v; want keys %v", keys, want)
+	}
+	for _, k := range keys {
+		if !want[k] {
+			t.Fatalf("GET /keys returned unexpected key %q (got %v)", k, keys)
+		}
+	}
+}
+
+func TestFlush(t *testing.T) {
+	ts := newTestServer(t)
+
+	do(t, ts, http.MethodPut, "/kv/a", "1").Body.Close()
+	do(t, ts, http.MethodPut, "/kv/b", "2").Body.Close()
+
+	resp := do(t, ts, http.MethodDelete, "/kv", "")
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("DELETE /kv status = %d; want 204", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	resp = do(t, ts, http.MethodGet, "/kv/a", "")
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("GET /kv/a after flush status = %d; want 404", resp.StatusCode)
+	}
+}
