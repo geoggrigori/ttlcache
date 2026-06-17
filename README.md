@@ -1,5 +1,7 @@
 ![ttlcache](assets/banner.svg)
 
+[![CI](https://github.com/geoggrigori/ttlcache/actions/workflows/ci.yml/badge.svg)](https://github.com/geoggrigori/ttlcache/actions/workflows/ci.yml)
+
 [![Go](https://img.shields.io/badge/Go-1.22%2B-00ADD8?logo=go&logoColor=white)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-6B2FB5.svg)](LICENSE)
 [![dependencies](https://img.shields.io/badge/dependencies-zero-4A1E86.svg)](go.mod)
