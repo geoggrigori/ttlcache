@@ -28,12 +28,16 @@ func New(store *cache.Store, defaultTTL time.Duration) *Server {
 //	PUT    /kv/{key}  store a value (TTL from ?ttl= or X-TTL, else default)
 //	GET    /kv/{key}  fetch a value (404 if missing or expired)
 //	DELETE /kv/{key}  remove a value (always 204)
+//	GET    /keys      JSON array of the currently non-expired keys
+//	DELETE /kv        flush the entire cache (always 204)
 //	GET    /stats     JSON snapshot of items, hits, misses
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("PUT /kv/{key}", s.handlePut)
 	mux.HandleFunc("GET /kv/{key}", s.handleGet)
 	mux.HandleFunc("DELETE /kv/{key}", s.handleDelete)
+	mux.HandleFunc("GET /keys", s.handleKeys)
+	mux.HandleFunc("DELETE /kv", s.handleFlush)
 	mux.HandleFunc("GET /stats", s.handleStats)
 	return mux
 }
@@ -85,6 +89,17 @@ func (s *Server) handleGet(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
 	s.store.Delete(r.PathValue("key"))
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) handleKeys(w http.ResponseWriter, r *http.Request) {
+	keys := s.store.Keys()
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(keys)
+}
+
+func (s *Server) handleFlush(w http.ResponseWriter, r *http.Request) {
+	s.store.Flush()
 	w.WriteHeader(http.StatusNoContent)
 }
 
