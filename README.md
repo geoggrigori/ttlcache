@@ -19,7 +19,7 @@ nothing to keep up to date.
 - **Concurrency-safe** — the store is guarded by a `sync.RWMutex` and passes `go test -race`.
 - **Background janitor** — a goroutine periodically evicts expired keys so memory does not grow unbounded.
 - **Hit / miss stats** — tracked with atomic counters and exposed as JSON.
-- **Tiny HTTP API** — `PUT` / `GET` / `DELETE` on `/kv/{key}` plus a `/stats` endpoint, using the Go 1.22+ pattern-based `ServeMux`.
+- **Tiny HTTP API** — `PUT` / `GET` / `DELETE` on `/kv/{key}`, plus `/keys`, cache flush, and a `/stats` endpoint, using the Go 1.22+ pattern-based `ServeMux`.
 - **Zero dependencies** — standard library only.
 
 ## Architecture
@@ -32,6 +32,8 @@ flowchart LR
         put[PUT /kv/key]
         get[GET /kv/key]
         del[DELETE /kv/key]
+        keys[GET /keys]
+        flush[DELETE /kv]
         stats[GET /stats]
     end
 
@@ -46,6 +48,8 @@ flowchart LR
     client --> get --> m
     get -. hit/miss .-> counters
     client --> del --> m
+    client --> keys --> m
+    client --> flush --> m
     client --> stats --> counters
     stats --> m
     janitor -- ticker --> m
@@ -69,6 +73,8 @@ go run .            # start the server on :8080
 | `PUT`    | `/kv/{key}`  | Store the request body. TTL from `?ttl=` or `X-TTL`.     |
 | `GET`    | `/kv/{key}`  | Return the value, or `404` if missing/expired.           |
 | `DELETE` | `/kv/{key}`  | Remove the key. Always `204`.                            |
+| `GET`    | `/keys`      | JSON array of the currently non-expired keys.            |
+| `DELETE` | `/kv`        | Flush the entire cache. Always `204`.                    |
 | `GET`    | `/stats`     | JSON snapshot: `items`, `hits`, `misses`.                |
 
 ### curl examples
@@ -94,6 +100,14 @@ curl -i "http://localhost:8080/kv/greeting?ttl=1s"   # PUT, wait > 1s, then GET
 curl -i "http://localhost:8080/kv/greeting"
 # HTTP/1.1 404 Not Found
 # not found
+
+# List the currently non-expired keys
+curl "http://localhost:8080/keys"
+# ["greeting","session"]
+
+# Flush the entire cache
+curl -X DELETE "http://localhost:8080/kv"
+# (204 No Content)
 
 # Cache statistics
 curl "http://localhost:8080/stats"
