@@ -131,6 +131,30 @@ func (s *Store) Len() int {
 	return n
 }
 
+// Keys returns the keys of all entries that are currently present and not
+// expired. Expired entries that have not yet been evicted are excluded. The
+// order of the returned slice is unspecified.
+func (s *Store) Keys() []string {
+	now := s.now()
+	s.mu.RLock()
+	keys := make([]string, 0, len(s.items))
+	for k, it := range s.items {
+		if !it.expired(now) {
+			keys = append(keys, k)
+		}
+	}
+	s.mu.RUnlock()
+	return keys
+}
+
+// Flush removes all entries from the Store. Hit and miss counters are left
+// unchanged.
+func (s *Store) Flush() {
+	s.mu.Lock()
+	clear(s.items)
+	s.mu.Unlock()
+}
+
 // Stats is a snapshot of cache counters.
 type Stats struct {
 	Items  int    `json:"items"`
