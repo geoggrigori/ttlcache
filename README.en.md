@@ -10,8 +10,6 @@
 <a href="README.es.md"><img src="https://img.shields.io/badge/Español-555555?style=for-the-badge" alt="Español"/></a>
 </div>
 
-![ttlcache](assets/banner.svg)
-
 [![CI](https://github.com/geoggrigori/ttlcache/actions/workflows/ci.yml/badge.svg)](https://github.com/geoggrigori/ttlcache/actions/workflows/ci.yml)
 
 [![Go](https://img.shields.io/badge/Go-1.22%2B-00ADD8?logo=go&logoColor=white)](https://go.dev/)
