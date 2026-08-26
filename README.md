@@ -10,10 +10,6 @@
 <a href="README.es.md"><img src="https://img.shields.io/badge/Español-555555?style=for-the-badge" alt="Español"/></a>
 </div>
 
-<div align="center">
-  <img src="assets/banner.svg" width="100%" alt="ttlcache"/>
-</div>
-
 <h1 align="center">ttlcache</h1>
 <p align="center"><em>Cache chave-valor em memória, thread-safe, com TTL por chave, exposto via HTTP</em></p>
 <p align="center"><strong>PUT/GET/DELETE em /kv/{key} → janitor em background → stats de hit/miss</strong></p>
