@@ -1,32 +1,57 @@
-![ttlcache](assets/banner.svg)
+<!-- ══════════════════════════ TÍTULO ══════════════════════════ -->
+<div align="center">
+  <img src="docs/title-banner.svg" width="100%" alt="ttlcache"/>
+</div>
 
-[![CI](https://github.com/geoggrigori/ttlcache/actions/workflows/ci.yml/badge.svg)](https://github.com/geoggrigori/ttlcache/actions/workflows/ci.yml)
+<!-- ══════════════════════ IDIOMAS / LANGUAGES ══════════════════════ -->
+<div align="center">
+<a href="README.md"><img src="https://img.shields.io/badge/Português-1987F0?style=for-the-badge" alt="Português"/></a>
+<a href="README.en.md"><img src="https://img.shields.io/badge/English-555555?style=for-the-badge" alt="English"/></a>
+<a href="README.es.md"><img src="https://img.shields.io/badge/Español-555555?style=for-the-badge" alt="Español"/></a>
+</div>
 
-[![Go](https://img.shields.io/badge/Go-1.22%2B-00ADD8?logo=go&logoColor=white)](https://go.dev/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-6B2FB5.svg)](LICENSE)
-[![dependencies](https://img.shields.io/badge/dependencies-zero-4A1E86.svg)](go.mod)
-[![tests](https://img.shields.io/badge/tests-go%20test%20--race-success.svg)](#running-tests)
+<div align="center">
+  <img src="assets/banner.svg" width="100%" alt="ttlcache"/>
+</div>
 
-# ttlcache
+<h1 align="center">ttlcache</h1>
+<p align="center"><em>Cache chave-valor em memória, thread-safe, com TTL por chave, exposto via HTTP</em></p>
+<p align="center"><strong>PUT/GET/DELETE em /kv/{key} → janitor em background → stats de hit/miss</strong></p>
 
-A small, concurrency-safe in-memory key-value cache with per-key TTL, served over HTTP.
-It is built entirely on the Go standard library, so there is nothing to download and
-nothing to keep up to date.
+<div align="center">
+<a href="https://github.com/geoggrigori/ttlcache/actions/workflows/ci.yml"><img src="https://github.com/geoggrigori/ttlcache/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+<img src="https://img.shields.io/badge/Go-1.22%2B-00ADD8?style=flat-square&logo=go&logoColor=white" alt="go"/>
+<img src="https://img.shields.io/badge/dependencies-zero-4A1E86?style=flat-square" alt="zero deps"/>
+<img src="https://img.shields.io/badge/License-MIT-2E7D32?style=flat-square" alt="license"/>
+</div>
 
-## Features
+<div align="center">
+<a href="#sobre"><img src="https://img.shields.io/badge/▸_SOBRE-1987F0?style=for-the-badge" alt="sobre"/></a>
+<a href="#arquitetura"><img src="https://img.shields.io/badge/▸_ARQUITETURA-000000?style=for-the-badge" alt="arquitetura"/></a>
+<a href="#api-http"><img src="https://img.shields.io/badge/▸_API_HTTP-1987F0?style=for-the-badge" alt="api"/></a>
+<a href="#uso"><img src="https://img.shields.io/badge/▸_USO-000000?style=for-the-badge" alt="uso"/></a>
+</div>
 
-- **Per-key TTL** — every entry expires independently; expired entries read as missing.
-- **Concurrency-safe** — the store is guarded by a `sync.RWMutex` and passes `go test -race`.
-- **Background janitor** — a goroutine periodically evicts expired keys so memory does not grow unbounded.
-- **Hit / miss stats** — tracked with atomic counters and exposed as JSON.
-- **Tiny HTTP API** — `PUT` / `GET` / `DELETE` on `/kv/{key}`, plus `/keys`, cache flush, and a `/stats` endpoint, using the Go 1.22+ pattern-based `ServeMux`.
-- **Zero dependencies** — standard library only.
+<br/>
 
-## Architecture
+> ⚡ **Zero dependências** — 100% biblioteca padrão do Go. Nada pra baixar, nada pra manter atualizado.
+
+## Sobre
+
+**ttlcache** é um cache chave-valor em memória, thread-safe, com **TTL por chave**, servido via HTTP. Construído inteiramente sobre a standard library do Go.
+
+**Destaques:**
+- **TTL por chave** — cada entrada expira independentemente; entradas expiradas são lidas como ausentes.
+- **Thread-safe** — o store é protegido por `sync.RWMutex` e passa em `go test -race`.
+- **Janitor em background** — uma goroutine evicta periodicamente as chaves expiradas, então a memória não cresce sem limite.
+- **Stats de hit/miss** — rastreados com contadores atômicos, expostos como JSON.
+- **API HTTP minúscula** — `PUT`/`GET`/`DELETE` em `/kv/{key}`, mais `/keys`, flush e `/stats`, usando o `ServeMux` baseado em padrões do Go 1.22+.
+
+## Arquitetura
 
 ```mermaid
 flowchart LR
-    client([HTTP client])
+    client([Cliente HTTP])
 
     subgraph srv[net/http ServeMux]
         put[PUT /kv/key]
@@ -39,10 +64,10 @@ flowchart LR
 
     subgraph store[Store - sync.RWMutex]
         m[(key -> value, expiresAt)]
-        counters[hits / misses<br/>atomic counters]
+        counters[hits / misses<br/>contadores atômicos]
     end
 
-    janitor[[Janitor goroutine<br/>evicts expired keys]]
+    janitor[[Goroutine janitor<br/>evicta chaves expiradas]]
 
     client --> put --> m
     client --> get --> m
@@ -58,88 +83,52 @@ flowchart LR
 ## Build & run
 
 ```sh
-go build ./...      # compile
-go run .            # start the server on :8080
+go build ./...
+go run .            # sobe o servidor em :8080
 ```
 
-```
-2026/06/16 12:00:00 ttlcache listening on :8080 (default ttl 1m0s, janitor interval 30s)
-```
+## API HTTP
 
-## HTTP API
-
-| Method   | Path         | Description                                              |
-| -------- | ------------ | -------------------------------------------------------- |
-| `PUT`    | `/kv/{key}`  | Store the request body. TTL from `?ttl=` or `X-TTL`.     |
-| `GET`    | `/kv/{key}`  | Return the value, or `404` if missing/expired.           |
-| `DELETE` | `/kv/{key}`  | Remove the key. Always `204`.                            |
-| `GET`    | `/keys`      | JSON array of the currently non-expired keys.            |
-| `DELETE` | `/kv`        | Flush the entire cache. Always `204`.                    |
-| `GET`    | `/stats`     | JSON snapshot: `items`, `hits`, `misses`.                |
-
-### curl examples
+| Método | Rota | Descrição |
+|---|---|---|
+| `PUT` | `/kv/{key}` | Salva o corpo da requisição. TTL via `?ttl=` ou `X-TTL`. |
+| `GET` | `/kv/{key}` | Retorna o valor, ou `404` se ausente/expirado. |
+| `DELETE` | `/kv/{key}` | Remove a chave. Sempre `204`. |
+| `GET` | `/keys` | Array JSON das chaves atualmente não expiradas. |
+| `DELETE` | `/kv` | Limpa o cache inteiro. Sempre `204`. |
+| `GET` | `/stats` | Snapshot JSON: `items`, `hits`, `misses`. |
 
 ```sh
-# Store a value with a 30s TTL (via query string)
 curl -X PUT "http://localhost:8080/kv/greeting?ttl=30s" --data "hello"
-# (204 No Content)
-
-# Or set the TTL via header
-curl -X PUT "http://localhost:8080/kv/session" -H "X-TTL: 5m" --data "abc123"
-
-# Read it back
-curl "http://localhost:8080/kv/greeting"
-# hello
-
-# Delete it
+curl "http://localhost:8080/kv/greeting"        # hello
 curl -X DELETE "http://localhost:8080/kv/greeting"
-# (204 No Content)
-
-# Reading an expired (or unknown) key returns 404
-curl -i "http://localhost:8080/kv/greeting?ttl=1s"   # PUT, wait > 1s, then GET
-curl -i "http://localhost:8080/kv/greeting"
-# HTTP/1.1 404 Not Found
-# not found
-
-# List the currently non-expired keys
-curl "http://localhost:8080/keys"
-# ["greeting","session"]
-
-# Flush the entire cache
-curl -X DELETE "http://localhost:8080/kv"
-# (204 No Content)
-
-# Cache statistics
-curl "http://localhost:8080/stats"
-# {"items":1,"hits":3,"misses":1}
+curl "http://localhost:8080/keys"               # ["greeting","session"]
+curl "http://localhost:8080/stats"              # {"items":1,"hits":3,"misses":1}
 ```
 
-## Configuration
+## Configuração
 
-Each option can be set with a flag or an environment variable; the flag takes precedence.
+| Flag | Env | Padrão | Descrição |
+|---|---|---|---|
+| `-port` | `PORT` | `8080` | Porta TCP |
+| `-ttl` | `TTL` | `1m` | TTL padrão quando a requisição omite um |
+| `-janitor-interval` | `JANITOR_INTERVAL` | `30s` | Frequência de evicção do janitor |
 
-| Flag                 | Env                | Default | Description                                  |
-| -------------------- | ------------------ | ------- | -------------------------------------------- |
-| `-port`              | `PORT`             | `8080`  | TCP port to listen on.                       |
-| `-ttl`               | `TTL`              | `1m`    | Default TTL when a request omits one.        |
-| `-janitor-interval`  | `JANITOR_INTERVAL` | `30s`   | How often the janitor evicts expired keys.   |
+## Uso
 
 ```sh
-PORT=9000 TTL=2m JANITOR_INTERVAL=10s go run .
-# or
-go run . -port 9000 -ttl 2m -janitor-interval 10s
+go test ./...          # todos os testes
+go test -race ./...    # sob o detector de race
 ```
 
-## Running tests
+A suíte cobre set/get, expiração (via clock injetável), delete, evicção do janitor, `Set`/`Get` concorrente sob `-race`, e os handlers HTTP via `httptest`.
 
-```sh
-go test ./...          # all unit and HTTP tests
-go test -race ./...    # the same suite under the race detector
-```
+## Licença
 
-The suite covers set/get, expiry (via an injectable clock), delete, janitor eviction,
-concurrent `Set`/`Get` under `-race`, and the HTTP handlers through `httptest`.
+[MIT](LICENSE).
 
-## License
+<div align="center">
+  <img src="https://file.loading.io/color/feature/thumb/Blues-8.png?" width="100%" height="10px" alt="divider"/>
+</div>
 
-Released under the [MIT License](LICENSE). Copyright (c) 2026 Geovana Grigorio.
+<p align="center"><sub>Desenvolvido por <strong><a href="https://github.com/geoggrigori">Grigori</a></strong> · 2026</sub></p>
