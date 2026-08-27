@@ -21,8 +21,6 @@
 [![dependencies](https://img.shields.io/badge/dependencies-zero-4A1E86.svg)](go.mod)
 [![tests](https://img.shields.io/badge/tests-go%20test%20--race-success.svg)](#running-tests)
 
-# ttlcache
-
 A small, concurrency-safe in-memory key-value cache with per-key TTL, served over HTTP.
 It is built entirely on the Go standard library, so there is nothing to download and
 nothing to keep up to date.
