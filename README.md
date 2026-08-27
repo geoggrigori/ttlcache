@@ -14,10 +14,6 @@
 
 <br/>
 
-<h1 align="center">ttlcache</h1>
-<p align="center"><em>Cache chave-valor em memória, thread-safe, com TTL por chave, exposto via HTTP</em></p>
-<p align="center"><strong>PUT/GET/DELETE em /kv/{key} → janitor em background → stats de hit/miss</strong></p>
-
 <div align="center">
 <a href="https://github.com/geoggrigori/ttlcache/actions/workflows/ci.yml"><img src="https://github.com/geoggrigori/ttlcache/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
 <img src="https://img.shields.io/badge/Go-1.22%2B-00ADD8?style=flat-square&logo=go&logoColor=white" alt="go"/>
